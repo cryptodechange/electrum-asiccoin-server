@@ -142,10 +142,10 @@ if __name__ == '__main__':
     from backends.irc import ServerProcessor
 
     backend_name = config.get('server', 'backend')
-    if backend_name == 'libbitcoin':
-        from backends.libbitcoin import BlockchainProcessor
+    if backend_name == 'libasiccoin':
+        from backends.libasiccoin import BlockchainProcessor
     elif backend_name == 'leveldb':
-        from backends.bitcoind import BlockchainProcessor
+        from backends.asiccoind import BlockchainProcessor
     else:
         print "Unknown backend '%s' specified\n" % backend_name
         sys.exit(1)

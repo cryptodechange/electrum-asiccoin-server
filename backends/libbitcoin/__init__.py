@@ -1,8 +1,8 @@
 import threading
 import time
 
-import bitcoin
-from bitcoin import bind, _1, _2, _3
+import asiccoin
+from asiccoin import bind, _1, _2, _3
 
 from processor import Processor
 import history1 as history
@@ -61,7 +61,7 @@ class MonitorAddress:
             self.monitor_address.add(address)
 
     def unpack(self, tx):
-        tx_hash = bitcoin.hash_transaction(tx)
+        tx_hash = asiccoin.hash_transaction(tx)
         previous_outputs = []
         for input in tx.inputs:
             prevout = input.previous_output
@@ -69,7 +69,7 @@ class MonitorAddress:
             previous_outputs.append(prevout)
         addrs = []
         for output_index, output in enumerate(tx.outputs):
-            address = bitcoin.payment_address()
+            address = asiccoin.payment_address()
             if address.extract(output.output_script):
                 addrs.append((output_index, str(address)))
         return tx_hash, previous_outputs, addrs
@@ -144,26 +144,26 @@ class Backend:
 
     def __init__(self):
         # Create 3 thread-pools each with 1 thread
-        self.network_service = bitcoin.async_service(1)
-        self.disk_service = bitcoin.async_service(1)
-        self.mempool_service = bitcoin.async_service(1)
+        self.network_service = asiccoin.async_service(1)
+        self.disk_service = asiccoin.async_service(1)
+        self.mempool_service = asiccoin.async_service(1)
 
-        self.hosts = bitcoin.hosts(self.network_service)
-        self.handshake = bitcoin.handshake(self.network_service)
-        self.network = bitcoin.network(self.network_service)
-        self.protocol = bitcoin.protocol(self.network_service, self.hosts,
+        self.hosts = asiccoin.hosts(self.network_service)
+        self.handshake = asiccoin.handshake(self.network_service)
+        self.network = asiccoin.network(self.network_service)
+        self.protocol = asiccoin.protocol(self.network_service, self.hosts,
                                          self.handshake, self.network)
 
-        db_prefix = "/home/genjix/libbitcoin/database"
-        self.blockchain = bitcoin.bdb_blockchain(self.disk_service, db_prefix,
+        db_prefix = "/home/genjix/libasiccoin/database"
+        self.blockchain = asiccoin.bdb_blockchain(self.disk_service, db_prefix,
                                                  self.blockchain_started)
-        self.poller = bitcoin.poller(self.mempool_service, self.blockchain)
+        self.poller = asiccoin.poller(self.mempool_service, self.blockchain)
         self.transaction_pool = \
-            bitcoin.transaction_pool(self.mempool_service, self.blockchain)
+            asiccoin.transaction_pool(self.mempool_service, self.blockchain)
 
         self.protocol.subscribe_channel(self.monitor_tx)
         self.session = \
-            bitcoin.session(self.network_service, self.hosts, self.handshake,
+            asiccoin.session(self.network_service, self.hosts, self.handshake,
                             self.network, self.protocol, self.blockchain,
                             self.poller, self.transaction_pool)
         self.session.start(self.handle_start)
@@ -189,7 +189,7 @@ class Backend:
         print "Stopped backend"
 
     def monitor_tx(self, node):
-        # We will be notified here when connected to new bitcoin nodes
+        # We will be notified here when connected to new asiccoin nodes
         # Here we subscribe to new transactions from them which we
         # add to the transaction_pool. That way we can track which
         # transactions we are interested in.
@@ -201,7 +201,7 @@ class Backend:
         if ec:
             print "Error with new transaction:", ec
             return
-        tx_hash = bitcoin.hash_transaction(tx)
+        tx_hash = asiccoin.hash_transaction(tx)
         self.memory_buffer.receive(tx, bind(self.store_tx, _1, tx_hash))
         # Re-subscribe to new transactions from node
         node.subscribe_transaction(bind(self.recv_tx, _1, _2, node))
@@ -353,8 +353,8 @@ class BlockchainProcessor(Processor):
             self.broadcast_transaction(request)
 
     def broadcast_transaction(self, request):
-        raw_tx = bitcoin.data_chunk(str(request["params"][0]))
-        exporter = bitcoin.satoshi_exporter()
+        raw_tx = asiccoin.data_chunk(str(request["params"][0]))
+        exporter = asiccoin.satoshi_exporter()
         try:
             tx = exporter.load_transaction(raw_tx)
         except RuntimeError:
@@ -368,6 +368,6 @@ class BlockchainProcessor(Processor):
             }
         else:
             self.backend.protocol.broadcast_transaction(tx)
-            tx_hash = str(bitcoin.hash_transaction(tx))
+            tx_hash = str(asiccoin.hash_transaction(tx))
             response = {"id": request["id"], "result": tx_hash, "error": None}
         self.push_response(response)

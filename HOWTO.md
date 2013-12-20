@@ -20,8 +20,8 @@ Conventions
 In this document, lines starting with a hash sign (#) or a dollar sign ($)
 contain commands. Commands starting with a hash should be run as root,
 commands starting with a dollar should be run as a normal user (in this
-document, we assume that user is called 'bitcoin'). We also assume the
-bitcoin user has sudo rights, so we use '$ sudo command' when we need to.
+document, we assume that user is called 'asiccoin'). We also assume the
+asiccoin user has sudo rights, so we use '$ sudo command' when we need to.
 
 Strings that are surrounded by "lower than" and "greater than" ( < and > )
 should be replaced by the user with something appropriate. For example,
@@ -55,9 +55,9 @@ Python libraries.
 **Hardware.** The lightest setup is a pruning server with diskspace 
 requirements well under 1 GB growing very moderately and less taxing 
 on I/O and CPU once it's up and running. However note that you also need
-to run bitcoind and keep a copy of the full blockchain, which is roughly
+to run asiccoind and keep a copy of the full blockchain, which is roughly
 9 GB in April 2013. If you have less than 2 GB of RAM make sure you limit
-bitcoind to 8 concurrent connections. If you have more ressources to 
+asiccoind to 8 concurrent connections. If you have more ressources to 
 spare you can run the server with a higher limit of historic transactions 
 per address. CPU speed is also important, mostly for the initial block 
 chain import, but also if you plan to run a public Electrum server, which 
@@ -67,20 +67,20 @@ newer other than Atom should do for good performance.
 Instructions
 ------------
 
-### Step 1. Create a user for running bitcoind and Electrum server
+### Step 1. Create a user for running asiccoind and Electrum server
 
 This step is optional, but for better security and resource separation I
-suggest you create a separate user just for running `bitcoind` and Electrum.
+suggest you create a separate user just for running `asiccoind` and Electrum.
 We will also use the `~/bin` directory to keep locally installed files
 (others might want to use `/usr/local/bin` instead). We will download source
 code files to the `~/src` directory.
 
-    # sudo adduser bitcoin --disabled-password
-    # su - bitcoin
+    # sudo adduser asiccoin --disabled-password
+    # su - asiccoin
     $ mkdir ~/bin ~/src
     $ echo $PATH
 
-If you don't see `/home/bitcoin/bin` in the output, you should add this line
+If you don't see `/home/asiccoin/bin` in the output, you should add this line
 to your `.bashrc`, `.profile` or `.bash_profile`, then logout and relogin:
 
     PATH="$HOME/bin:$PATH"
@@ -97,33 +97,33 @@ our ~/bin directory:
     $ chmod +x ~/src/electrum/server/server.py
     $ ln -s ~/src/electrum/server/server.py ~/bin/electrum-server
 
-### Step 3. Download bitcoind
+### Step 3. Download asiccoind
 
-Older versions of Electrum used to require a patched version of bitcoind. 
-This is not the case anymore since bitcoind supports the 'txindex' option.
-We currently recommend bitcoind 0.8.6 stable.
+Older versions of Electrum used to require a patched version of asiccoind. 
+This is not the case anymore since asiccoind supports the 'txindex' option.
+We currently recommend asiccoind 0.8.6 stable.
 
-If your package manager does not supply a recent bitcoind and prefer to compile
+If your package manager does not supply a recent asiccoind and prefer to compile
 here are some pointers for Ubuntu:
 
-    $ cd ~/src && wget http://sourceforge.net/projects/bitcoin/files/Bitcoin/bitcoin-0.8.6/bitcoin-0.8.6-linux.tar.gz
-    $ tar xfz bitcoin-0.8.6-linux.tar.gz
-    $ cd bitcoin-0.8.6-linux/src/src
+    $ cd ~/src && wget http://sourceforge.net/projects/asiccoin/files/AsicCoin/asiccoin-0.8.6/asiccoin-0.8.6-linux.tar.gz
+    $ tar xfz asiccoin-0.8.6-linux.tar.gz
+    $ cd asiccoin-0.8.6-linux/src/src
     $ sudo apt-get install make g++ python-leveldb libboost-all-dev libssl-dev libdb++-dev 
     $ make USE_UPNP= -f makefile.unix
-    $ strip ~/src/bitcoin-0.8.6-linux/src/src/bitcoind
-    $ ln -s ~/src/bitcoin-0.8.6-linux/src/src/bitcoind ~/bin/bitcoind
+    $ strip ~/src/asiccoin-0.8.6-linux/src/src/asiccoind
+    $ ln -s ~/src/asiccoin-0.8.6-linux/src/src/asiccoind ~/bin/asiccoind
 
-### Step 4. Configure and start bitcoind
+### Step 4. Configure and start asiccoind
 
-In order to allow Electrum to "talk" to `bitcoind`, we need to set up a RPC
-username and password for `bitcoind`. We will then start `bitcoind` and
+In order to allow Electrum to "talk" to `asiccoind`, we need to set up a RPC
+username and password for `asiccoind`. We will then start `asiccoind` and
 wait for it to complete downloading the blockchain.
 
-    $ mkdir ~/.bitcoin
-    $ $EDITOR ~/.bitcoin/bitcoin.conf
+    $ mkdir ~/.asiccoin
+    $ $EDITOR ~/.asiccoin/asiccoin.conf
 
-Write this in `bitcoin.conf`:
+Write this in `asiccoin.conf`:
 
     rpcuser=<rpc-username>
     rpcpassword=<rpc-password>
@@ -131,22 +131,22 @@ Write this in `bitcoin.conf`:
     txindex=1
 
 
-If you have an existing installation of bitcoind and have not previously
+If you have an existing installation of asiccoind and have not previously
 set txindex=1 you need to reindex the blockchain by running
 
-    $ bitcoind -reindex
+    $ asiccoind -reindex
 
-If you have a fresh copy of bitcoind start `bitcoind`:
+If you have a fresh copy of asiccoind start `asiccoind`:
 
-    $ bitcoind
+    $ asiccoind
 
-Allow some time to pass, so `bitcoind` connects to the network and starts
+Allow some time to pass, so `asiccoind` connects to the network and starts
 downloading blocks. You can check its progress by running:
 
-    $ bitcoind getinfo
+    $ asiccoind getinfo
 
-You should also set up your system to automatically start bitcoind at boot
-time, running as the 'bitcoin' user. Check your system documentation to
+You should also set up your system to automatically start asiccoind at boot
+time, running as the 'asiccoin' user. Check your system documentation to
 find out the best way to do this.
 
 ### Step 5. Install Electrum dependencies
@@ -256,7 +256,7 @@ in case you need to restore it.
 ### Step 10. Configure Electrum server
 
 Electrum reads a config file (/etc/electrum.conf) when starting up. This
-file includes the database setup, bitcoind RPC setup, and a few other
+file includes the database setup, asiccoind RPC setup, and a few other
 options.
 
     $ sudo cp ~/src/electrum/server/electrum.conf.sample /etc/electrum.conf
@@ -282,9 +282,9 @@ more often.
 
 Two more things for you to consider:
 
-1. To increase security you may want to close bitcoind for incoming connections and connect outbound only
+1. To increase security you may want to close asiccoind for incoming connections and connect outbound only
 
-2. Consider restarting bitcoind (together with electrum-server) on a weekly basis to clear out unconfirmed
+2. Consider restarting asiccoind (together with electrum-server) on a weekly basis to clear out unconfirmed
    transactions from the local the memory pool which did not propagate over the network
 
 ### Step 12. (Finally!) Run Electrum server
@@ -317,7 +317,7 @@ or hostname and the port. Press Ok, the client will disconnect from the
 current server and connect to your new Electrum server. You should see your
 addresses and transactions history. You can see the number of blocks and
 response time in the Server selection window. You should send/receive some
-bitcoins to confirm that everything is working properly.
+asiccoins to confirm that everything is working properly.
 
 ### Step 14. Join us on IRC, subscribe to the server thread
 
@@ -327,6 +327,6 @@ on supporting the community by running an Electrum node
 
 If you're operating a public Electrum server please subscribe
 to or regulary check the following thread:
-https://bitcointalk.org/index.php?topic=85475.0
+https://asiccointalk.org/index.php?topic=85475.0
 It'll contain announcements about important updates to Electrum
 server required for a smooth user experience.

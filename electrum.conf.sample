@@ -46,9 +46,9 @@ pruning_limit = 100
 # database = electrum.sqlite
 
 
-[bitcoind]
+[asiccoind]
 host = localhost
 port = 8332
-# user and password from bitcoin.conf
+# user and password from asiccoin.conf
 user = user
 password = password

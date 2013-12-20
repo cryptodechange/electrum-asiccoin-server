@@ -1,8 +1,8 @@
 #include <system_error>
 #include <boost/logic/tribool.hpp>
 
-#include <bitcoin/bitcoin.hpp>
-using namespace libbitcoin;
+#include <asiccoin/asiccoin.hpp>
+using namespace libasiccoin;
 
 #include <boost/python.hpp>
 namespace python = boost::python;

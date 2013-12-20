@@ -1,7 +1,7 @@
 import threading
 import time
 
-import bitcoin
+import asiccoin
 
 
 class ExpiryQueue(threading.Thread):
@@ -58,7 +58,7 @@ class PaymentHistory:
         self.address = address
         self.handle_finish = handle_finish
 
-        pubkey_hash = bitcoin.address_to_short_hash(address)
+        pubkey_hash = asiccoin.address_to_short_hash(address)
         self.chain.fetch_outputs(pubkey_hash, self.start_loading)
 
     def start_loading(self, ec, output_points):
@@ -68,7 +68,7 @@ class PaymentHistory:
                 self.statement.append(statement_line)
                 self.chain.fetch_spend(
                     outpoint,
-                    bitcoin.bind(self.load_spend, bitcoin._1, bitcoin._2, statement_line)
+                    asiccoin.bind(self.load_spend, asiccoin._1, asiccoin._2, statement_line)
                 )
                 self.load_tx_info(outpoint, statement_line, False)
 
@@ -112,32 +112,32 @@ class PaymentHistory:
         info["is_input"] = 1 if is_input else 0
         self.chain.fetch_transaction_index(
             point.hash,
-            bitcoin.bind(self.tx_index, bitcoin._1, bitcoin._2, bitcoin._3, statement_line, info)
+            asiccoin.bind(self.tx_index, asiccoin._1, asiccoin._2, asiccoin._3, statement_line, info)
         )
 
     def tx_index(self, ec, block_depth, offset, statement_line, info):
         info["height"] = block_depth
         self.chain.fetch_block_header_by_depth(
             block_depth,
-            bitcoin.bind(self.block_header, bitcoin._1, bitcoin._2, statement_line, info)
+            asiccoin.bind(self.block_header, asiccoin._1, asiccoin._2, statement_line, info)
         )
 
     def block_header(self, ec, blk_head, statement_line, info):
         info["timestamp"] = blk_head.timestamp
-        info["block_hash"] = str(bitcoin.hash_block_header(blk_head))
-        tx_hash = bitcoin.hash_digest(info["tx_hash"])
+        info["block_hash"] = str(asiccoin.hash_block_header(blk_head))
+        tx_hash = asiccoin.hash_digest(info["tx_hash"])
         self.chain.fetch_transaction(
             tx_hash,
-            bitcoin.bind(self.load_tx, bitcoin._1, bitcoin._2, statement_line, info)
+            asiccoin.bind(self.load_tx, asiccoin._1, asiccoin._2, statement_line, info)
         )
 
     def load_tx(self, ec, tx, statement_line, info):
         outputs = []
         for tx_out in tx.outputs:
             script = tx_out.output_script
-            if script.type() == bitcoin.payment_type.pubkey_hash:
-                pkh = bitcoin.short_hash(str(script.operations()[2].data))
-                outputs.append(bitcoin.public_key_hash_to_address(pkh))
+            if script.type() == asiccoin.payment_type.pubkey_hash:
+                pkh = asiccoin.short_hash(str(script.operations()[2].data))
+                outputs.append(asiccoin.public_key_hash_to_address(pkh))
             else:
                 outputs.append("Unknown")
         info["outputs"] = outputs
@@ -149,7 +149,7 @@ class PaymentHistory:
             info["value"] = our_output.value
             with statement_line.lock:
                 statement_line.raw_output_script = \
-                    str(bitcoin.save_script(our_output.output_script))
+                    str(asiccoin.save_script(our_output.output_script))
         if not [empty_in for empty_in in info["inputs"] if empty_in is None]:
             # We have the sole input
             assert(info["is_input"] == 1)
@@ -161,15 +161,15 @@ class PaymentHistory:
                 continue
             self.chain.fetch_transaction(
                 tx_in.previous_output.hash,
-                bitcoin.bind(self.load_input, bitcoin._1, bitcoin._2, tx_in.previous_output.index, statement_line, info, tx_idx)
+                asiccoin.bind(self.load_input, asiccoin._1, asiccoin._2, tx_in.previous_output.index, statement_line, info, tx_idx)
             )
 
     def load_input(self, ec, tx, index, statement_line, info, inputs_index):
         script = tx.outputs[index].output_script
-        if script.type() == bitcoin.payment_type.pubkey_hash:
-            pkh = bitcoin.short_hash(str(script.operations()[2].data))
+        if script.type() == asiccoin.payment_type.pubkey_hash:
+            pkh = asiccoin.short_hash(str(script.operations()[2].data))
             info["inputs"][inputs_index] = \
-                bitcoin.public_key_hash_to_address(pkh)
+                asiccoin.public_key_hash_to_address(pkh)
         else:
             info["inputs"][inputs_index] = "Unknown"
         if not [empty_in for empty_in in info["inputs"] if empty_in is None]:
@@ -194,9 +194,9 @@ if __name__ == "__main__":
     def last(ec, depth):
         print "D:", depth
 
-    service = bitcoin.async_service(1)
-    prefix = "/home/genjix/libbitcoin/database"
-    chain = bitcoin.bdb_blockchain(service, prefix)
+    service = asiccoin.async_service(1)
+    prefix = "/home/genjix/libasiccoin/database"
+    chain = asiccoin.bdb_blockchain(service, prefix)
     chain.fetch_last_depth(last)
     address = "1Pbn3DLXfjqF1fFV9YPdvpvyzejZwkHhZE"
     print "Looking up", address

@@ -1,4 +1,4 @@
-import bitcoin
+import asiccoin
 
 import trace_tx
 
@@ -19,11 +19,11 @@ def finish(ec, result):
 
 
 if __name__ == '__main__':
-    service = bitcoin.async_service(1)
-    chain = bitcoin.bdb_blockchain(service, "/home/genjix/libbitcoin/database",
+    service = asiccoin.async_service(1)
+    chain = asiccoin.bdb_blockchain(service, "/home/genjix/libasiccoin/database",
                                    blockchain_started)
     chain.fetch_transaction(
-        bitcoin.hash_digest("16e3e3bfbaa072e33e6a9be1df7a13ecde5ad46a8d4d4893dbecaf0c0aeeb842"),
+        asiccoin.hash_digest("16e3e3bfbaa072e33e6a9be1df7a13ecde5ad46a8d4d4893dbecaf0c0aeeb842"),
         handle_tx
     )
 

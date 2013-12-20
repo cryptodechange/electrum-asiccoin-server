@@ -1,7 +1,7 @@
-#include <bitcoin/bitcoin.hpp>
-using namespace libbitcoin;
+#include <asiccoin/asiccoin.hpp>
+using namespace libasiccoin;
 
-#include "/home/genjix/python-bitcoin/src/primitive.h"
+#include "/home/genjix/python-asiccoin/src/primitive.h"
 
 namespace ph = std::placeholders;
 

@@ -1,8 +1,8 @@
 import threading
 import time
 
-import bitcoin
-from bitcoin import bind, _1, _2, _3
+import asiccoin
+from asiccoin import bind, _1, _2, _3
 import multimap
 
 
@@ -43,13 +43,13 @@ class MemoryPoolBuffer:
         self.timestamps = {}
 
     def recv_tx(self, tx, handle_store):
-        tx_hash = str(bitcoin.hash_transaction(tx))
+        tx_hash = str(asiccoin.hash_transaction(tx))
         desc = (tx_hash, [], [])
         for input in tx.inputs:
             prevout = input.previous_output
             desc[1].append((str(prevout.hash), prevout.index))
         for idx, output in enumerate(tx.outputs):
-            address = bitcoin.payment_address()
+            address = asiccoin.payment_address()
             if address.extract(output.output_script):
                 desc[2].append((idx, str(address)))
         self.txpool.store(
@@ -64,12 +64,12 @@ class MemoryPoolBuffer:
             handle_store(ec)
             return
         for idx, prevout in enumerate(prevouts):
-            #inpoint = bitcoin.input_point()
+            #inpoint = asiccoin.input_point()
             #inpoint.hash, inpoint.index = tx_hash, idx
             prevout = "%s:%s" % prevout
             self.lookup_input[prevout] = tx_hash, idx
         for idx, address in addrs:
-            #outpoint = bitcoin.output_point()
+            #outpoint = asiccoin.output_point()
             #outpoint.hash, outpoint.index = tx_hash, idx
             self.lookup_address[str(address)] = tx_hash, idx
         self.timestamps[tx_hash] = int(time.time())
@@ -83,13 +83,13 @@ class MemoryPoolBuffer:
             return
         print "Confirmed", tx_hash
         for idx, prevout in enumerate(prevouts):
-            #inpoint = bitcoin.input_point()
+            #inpoint = asiccoin.input_point()
             #inpoint.hash, inpoint.index = tx_hash, idx
             prevout = "%s:%s" % prevout
             assert self.lookup_input[prevout] == (tx_hash, idx)
             del self.lookup_input[prevout]
         for idx, address in addrs:
-            #outpoint = bitcoin.output_point()
+            #outpoint = asiccoin.output_point()
             #outpoint.hash, outpoint.index = tx_hash, idx
             outpoint = tx_hash, idx
             self.lookup_address.delete(str(address), outpoint)
@@ -158,7 +158,7 @@ class History:
         self.address = address
         self.handle_finish = handle_finish
 
-        address = bitcoin.payment_address(address)
+        address = asiccoin.payment_address(address)
         # To begin we fetch all the outputs (payments in)
         # associated with this address
         self.chain.fetch_outputs(address, bind(self.check_membuf, _1, _2))
@@ -200,24 +200,24 @@ class History:
         with self.lock:
             self.membuf_result = membuf_result
         for info in self.membuf_result:
-            self.txpool.fetch(bitcoin.hash_digest(info["tx_hash"]), bind(self.load_pool_tx, _1, _2, info))
+            self.txpool.fetch(asiccoin.hash_digest(info["tx_hash"]), bind(self.load_pool_tx, _1, _2, info))
 
     def load_spend(self, ec, inpoint, entry):
         # Need a custom self.stop_on_error(...) as a missing spend
         # is not an error in this case.
-        if not self.stopped() and ec and ec != bitcoin.error.unspent_output:
+        if not self.stopped() and ec and ec != asiccoin.error.unspent_output:
             self.handle_finish(None)
             self.stop()
         if self.stopped():
             return
         with entry.lock:
-            if ec == bitcoin.error.unspent_output:
+            if ec == asiccoin.error.unspent_output:
                 # This particular entry.output_point
                 # has not been spent yet
                 entry.input_point = False
             else:
                 entry.input_point = inpoint
-        if ec == bitcoin.error.unspent_output:
+        if ec == asiccoin.error.unspent_output:
             # Attempt to stop if all the info for the inputs and outputs
             # has been loaded.
             self.finish_if_done()
@@ -286,8 +286,8 @@ class History:
         if self.stop_on_error(ec):
             return
         info["timestamp"] = blk_head.timestamp
-        info["block_hash"] = str(bitcoin.hash_block_header(blk_head))
-        tx_hash = bitcoin.hash_digest(info["tx_hash"])
+        info["block_hash"] = str(asiccoin.hash_block_header(blk_head))
+        tx_hash = asiccoin.hash_digest(info["tx_hash"])
         # Now load the actual main transaction for this input or output
         self.chain.fetch_transaction(tx_hash, bind(self.load_chain_tx, _1, _2, entry, info))
 
@@ -306,7 +306,7 @@ class History:
             info["value"] = our_output.value
             # Save serialised output script in case this output is unspent
             info["raw_output_script"] = \
-                str(bitcoin.save_script(our_output.output_script))
+                str(asiccoin.save_script(our_output.output_script))
         else:
             assert(info["is_input"] == 1)
             info.previous_output = tx.inputs[info["index"]].previous_output
@@ -327,7 +327,7 @@ class History:
         # List of output addresses
         outputs = []
         for tx_out in tx.outputs:
-            address = bitcoin.payment_address()
+            address = asiccoin.payment_address()
             # Attempt to extract address from output script
             if address.extract(tx_out.output_script):
                 outputs.append(address.encoded())
@@ -365,7 +365,7 @@ class History:
             # Save serialised output script in case this output is unspent
             with entry.lock:
                 entry.raw_output_script = \
-                    str(bitcoin.save_script(our_output.output_script))
+                    str(asiccoin.save_script(our_output.output_script))
         # If all the inputs are loaded
         if self.inputs_all_loaded(info["inputs"]):
             # We are the sole input
@@ -385,7 +385,7 @@ class History:
         # corresponding output.
         # We need the output to extract the address.
         script = tx.outputs[output_index].output_script
-        address = bitcoin.payment_address()
+        address = asiccoin.payment_address()
         if address.extract(script):
             info["inputs"][input_index] = address.encoded()
         else:
@@ -425,13 +425,13 @@ def payment_history(chain, txpool, membuf, address, handle_finish):
 
 
 if __name__ == "__main__":
-    ex = bitcoin.satoshi_exporter()
-    tx_a = bitcoin.data_chunk("0100000003d0406a31f628e18f5d894b2eaf4af719906dc61be4fb433a484ed870f6112d15000000008b48304502210089c11db8c1524d8839243803ac71e536f3d876e8265bbb3bc4a722a5d0bd40aa022058c3e59a7842ef1504b1c2ce048f9af2d69bbf303401dced1f68b38d672098a10141046060f6c8e355b94375eec2cc1d231f8044e811552d54a7c4b36fe8ee564861d07545c6c9d5b9f60d16e67d683b93486c01d3bd3b64d142f48af70bb7867d0ffbffffffff6152ed1552b1f2635317cea7be06615a077fc0f4aa62795872836c4182ca0f25000000008b48304502205f75a468ddb08070d235f76cb94c3f3e2a75e537bc55d087cc3e2a1559b7ac9b022100b17e4c958aaaf9b93359f5476aa5ed438422167e294e7207d5cfc105e897ed91014104a7108ec63464d6735302085124f3b7a06aa8f9363eab1f85f49a21689b286eb80fbabda7f838d9b6bff8550b377ad790b41512622518801c5230463dbbff6001ffffffff01c52914dcb0f3d8822e5a9e3374e5893a7b6033c9cfce5a8e5e6a1b3222a5cb010000008c4930460221009561f7206cc98f40f3eab5f3308b12846d76523bd07b5f058463f387694452b2022100b2684ec201760fa80b02954e588f071e46d0ff16562c1ab393888416bf8fcc44014104a7108ec63464d6735302085124f3b7a06aa8f9363eab1f85f49a21689b286eb80fbabda7f838d9b6bff8550b377ad790b41512622518801c5230463dbbff6001ffffffff02407e0f00000000001976a914c3b98829108923c41b3c1ba6740ecb678752fd5e88ac40420f00000000001976a914424648ea6548cc1c4ea707c7ca58e6131791785188ac00000000")
+    ex = asiccoin.satoshi_exporter()
+    tx_a = asiccoin.data_chunk("0100000003d0406a31f628e18f5d894b2eaf4af719906dc61be4fb433a484ed870f6112d15000000008b48304502210089c11db8c1524d8839243803ac71e536f3d876e8265bbb3bc4a722a5d0bd40aa022058c3e59a7842ef1504b1c2ce048f9af2d69bbf303401dced1f68b38d672098a10141046060f6c8e355b94375eec2cc1d231f8044e811552d54a7c4b36fe8ee564861d07545c6c9d5b9f60d16e67d683b93486c01d3bd3b64d142f48af70bb7867d0ffbffffffff6152ed1552b1f2635317cea7be06615a077fc0f4aa62795872836c4182ca0f25000000008b48304502205f75a468ddb08070d235f76cb94c3f3e2a75e537bc55d087cc3e2a1559b7ac9b022100b17e4c958aaaf9b93359f5476aa5ed438422167e294e7207d5cfc105e897ed91014104a7108ec63464d6735302085124f3b7a06aa8f9363eab1f85f49a21689b286eb80fbabda7f838d9b6bff8550b377ad790b41512622518801c5230463dbbff6001ffffffff01c52914dcb0f3d8822e5a9e3374e5893a7b6033c9cfce5a8e5e6a1b3222a5cb010000008c4930460221009561f7206cc98f40f3eab5f3308b12846d76523bd07b5f058463f387694452b2022100b2684ec201760fa80b02954e588f071e46d0ff16562c1ab393888416bf8fcc44014104a7108ec63464d6735302085124f3b7a06aa8f9363eab1f85f49a21689b286eb80fbabda7f838d9b6bff8550b377ad790b41512622518801c5230463dbbff6001ffffffff02407e0f00000000001976a914c3b98829108923c41b3c1ba6740ecb678752fd5e88ac40420f00000000001976a914424648ea6548cc1c4ea707c7ca58e6131791785188ac00000000")
     tx_a = ex.load_transaction(tx_a)
-    assert bitcoin.hash_transaction(tx_a) == "e72e4f025695446cfd5c5349d1720beb38801f329a00281f350cb7e847153397"
-    tx_b = bitcoin.data_chunk("0100000001e269f0d74b8e6849233953715bc0be3ba6727afe0bc5000d015758f9e67dde34000000008c4930460221008e305e3fdf4420203a8cced5be20b73738a3b51186dfda7c6294ee6bebe331b7022100c812ded044196132f5e796dbf4b566b6ee3246cc4915eca3cf07047bcdf24a9301410493b6ce24182a58fc3bd0cbee0ddf5c282e00c0c10b1293c7a3567e95bfaaf6c9a431114c493ba50398ad0a82df06254605d963d6c226db615646fadd083ddfd9ffffffff020f9c1208000000001976a91492fffb2cb978d539b6bcd12c968b263896c6aacf88ac8e3f7600000000001976a914654dc745e9237f86b5fcdfd7e01165af2d72909588ac00000000")
+    assert asiccoin.hash_transaction(tx_a) == "e72e4f025695446cfd5c5349d1720beb38801f329a00281f350cb7e847153397"
+    tx_b = asiccoin.data_chunk("0100000001e269f0d74b8e6849233953715bc0be3ba6727afe0bc5000d015758f9e67dde34000000008c4930460221008e305e3fdf4420203a8cced5be20b73738a3b51186dfda7c6294ee6bebe331b7022100c812ded044196132f5e796dbf4b566b6ee3246cc4915eca3cf07047bcdf24a9301410493b6ce24182a58fc3bd0cbee0ddf5c282e00c0c10b1293c7a3567e95bfaaf6c9a431114c493ba50398ad0a82df06254605d963d6c226db615646fadd083ddfd9ffffffff020f9c1208000000001976a91492fffb2cb978d539b6bcd12c968b263896c6aacf88ac8e3f7600000000001976a914654dc745e9237f86b5fcdfd7e01165af2d72909588ac00000000")
     tx_b = ex.load_transaction(tx_b)
-    assert bitcoin.hash_transaction(tx_b) == "acfda6dbf4ae1b102326bfb7c9541702d5ebb0339bc57bd74d36746855be8eac"
+    assert asiccoin.hash_transaction(tx_b) == "acfda6dbf4ae1b102326bfb7c9541702d5ebb0339bc57bd74d36746855be8eac"
 
     def blockchain_started(ec, chain):
         print "Blockchain initialisation:", ec
@@ -456,17 +456,17 @@ if __name__ == "__main__":
         def tx_confirmed(self, tx):
             pass
 
-    service = bitcoin.async_service(1)
-    prefix = "/home/genjix/libbitcoin/database"
-    chain = bitcoin.bdb_blockchain(service, prefix, blockchain_started)
-    txpool = bitcoin.transaction_pool(service, chain)
+    service = asiccoin.async_service(1)
+    prefix = "/home/genjix/libasiccoin/database"
+    chain = asiccoin.bdb_blockchain(service, prefix, blockchain_started)
+    txpool = asiccoin.transaction_pool(service, chain)
     membuf = MemoryPoolBuffer(txpool, chain, FakeMonitor())
     membuf.recv_tx(tx_a, store_tx)
     membuf.recv_tx(tx_b, store_tx)
 
-    txdat = bitcoin.data_chunk("0100000001d6cad920a04acd6c0609cd91fe4dafa1f3b933ac90e032c78fdc19d98785f2bb010000008b483045022043f8ce02784bd7231cb362a602920f2566c18e1877320bf17d4eabdac1019b2f022100f1fd06c57330683dff50e1b4571fb0cdab9592f36e3d7e98d8ce3f94ce3f255b01410453aa8d5ddef56731177915b7b902336109326f883be759ec9da9c8f1212c6fa3387629d06e5bf5e6bcc62ec5a70d650c3b1266bb0bcc65ca900cff5311cb958bffffffff0280969800000000001976a9146025cabdbf823949f85595f3d1c54c54cd67058b88ac602d2d1d000000001976a914c55c43631ab14f7c4fd9c5f153f6b9123ec32c8888ac00000000")
+    txdat = asiccoin.data_chunk("0100000001d6cad920a04acd6c0609cd91fe4dafa1f3b933ac90e032c78fdc19d98785f2bb010000008b483045022043f8ce02784bd7231cb362a602920f2566c18e1877320bf17d4eabdac1019b2f022100f1fd06c57330683dff50e1b4571fb0cdab9592f36e3d7e98d8ce3f94ce3f255b01410453aa8d5ddef56731177915b7b902336109326f883be759ec9da9c8f1212c6fa3387629d06e5bf5e6bcc62ec5a70d650c3b1266bb0bcc65ca900cff5311cb958bffffffff0280969800000000001976a9146025cabdbf823949f85595f3d1c54c54cd67058b88ac602d2d1d000000001976a914c55c43631ab14f7c4fd9c5f153f6b9123ec32c8888ac00000000")
     req = {"id": 110, "params": ["1GULoCDnGjhfSWzHs6zDzBxbKt9DR7uRbt"]}
-    ex = bitcoin.satoshi_exporter()
+    ex = asiccoin.satoshi_exporter()
     tx = ex.load_transaction(txdat)
     time.sleep(4)
     membuf.recv_tx(tx, store_tx)
